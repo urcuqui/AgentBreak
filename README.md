@@ -57,7 +57,7 @@ Make it concrete, in front of a live audience, that:
 ## Project layout
 
 ```
-hacking-ai-agents-demo/
+AgentBreak/
 ├── README.md
 ├── pyproject.toml
 ├── requirements.txt
@@ -70,10 +70,15 @@ hacking-ai-agents-demo/
 │   ├── models.py
 │   ├── rag.py
 │   ├── tools.py
+│   ├── agents_common.py
 │   ├── vulnerable_agent.py
 │   ├── secure_agent.py
 │   ├── policies.py
 │   ├── security.py
+│   ├── presenter.py
+│   ├── llm.py                ← Ollama client + deterministic simulator
+│   ├── webapp.py             ← FastAPI app (SSE streaming)
+│   ├── web/                  ← single-page UI (HTML/CSS/JS)
 │   └── logging_utils.py
 ├── tests/
 └── scripts/
@@ -86,23 +91,56 @@ hacking-ai-agents-demo/
 Requires Python 3.11+. No network access needed at runtime.
 
 ```bash
-cd hacking-ai-agents-demo
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
-pip install -e .
+pip install -e ".[dev]"
 ```
 
-## Commands
+## Optional: local LLM via Ollama
+
+The demo runs out of the box with a deterministic **simulator** so it never
+freezes on stage. To drive the agent with a real local model instead, install
+[Ollama](https://ollama.com) and pull a small instruct model:
+
+```bash
+# 1. Install Ollama (see https://ollama.com)
+# 2. Start the server (it usually runs as a service after install)
+ollama serve &
+
+# 3. Pull a small model
+ollama pull llama3.2:3b
+
+# 4. Verify it is installed
+ollama list
+```
+
+The CLI and the web app will fall back to the simulator automatically if:
+
+* Ollama is not reachable on `http://localhost:11434`, or
+* the requested model tag has not been pulled, or
+* the model returns unparseable JSON.
+
+Override the defaults with environment variables or flags:
+
+```bash
+export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_MODEL=llama3.2:3b
+```
+
+## CLI commands
 
 ```bash
 python -m hacking_ai_agents.cli normal
 python -m hacking_ai_agents.cli attack
 python -m hacking_ai_agents.cli secure
 python -m hacking_ai_agents.cli full-demo
-python -m hacking_ai_agents.cli full-demo --no-pause   # automatic
+python -m hacking_ai_agents.cli full-demo --no-pause      # automatic
+python -m hacking_ai_agents.cli attack --use-llm          # try the local LLM
+python -m hacking_ai_agents.cli attack --use-llm --model llama3.2:3b
 ```
 
-Common flags: `--verbose`, `--no-color`, `--no-pause` (only on `full-demo`).
+Common flags: `--verbose`, `--no-color`, `--no-pause` (only on `full-demo`),
+`--use-llm` / `--no-llm`, `--model <tag>`.
 
 Convenience launchers:
 
@@ -110,6 +148,26 @@ Convenience launchers:
 ./scripts/run_demo.sh                 # macOS/Linux
 .\scripts\run_demo.ps1                # Windows
 ```
+
+## Web app (visual demo)
+
+A FastAPI + SSE single-page UI is included to make the demo more visual on a
+projector. Start it with:
+
+```bash
+python -m hacking_ai_agents.cli serve --host 127.0.0.1 --port 8000
+# then open http://127.0.0.1:8000
+```
+
+The page exposes three buttons (**Normal**, **Attack**, **Secure**), a
+"Use local Ollama LLM" toggle and a model field. The header shows live status:
+
+* `[OK] Ollama detected (model=...)` — the LLM will be used.
+* `[!] Ollama up but model X is not pulled` — instructions to `ollama pull`.
+* `[--] Ollama not detected` — the simulator will be used.
+
+Each run streams structured events (banner, steps, retrieved document, policy
+decisions, outcome) over Server-Sent Events.
 
 ## Example output (abridged)
 
@@ -201,8 +259,12 @@ control, and no separation between system instructions and untrusted context.
 
 ## Troubleshooting
 
-* `ModuleNotFoundError: hacking_ai_agents` — run `pip install -e .` from
-  `hacking-ai-agents-demo/`.
+* `ModuleNotFoundError: hacking_ai_agents` — run `pip install -e .` from the
+  repository root.
+* `Ollama up but model X is not pulled` — run `ollama pull llama3.2:3b`
+  (or any other tag you want to use, then pass `--model <tag>`).
+* `Ollama not detected` — start Ollama (`ollama serve` or the desktop app)
+  and verify with `curl http://localhost:11434/api/tags`.
 * Colors not rendering — use a modern terminal (Windows Terminal, iTerm2,
   GNOME Terminal). Or pass `--no-color`.
 * Tests fail with `ImportError` — make sure you are on Python 3.11+ and that

@@ -35,9 +35,7 @@ def _maybe_llm(use_llm: bool, model: str, presenter: RichPresenter) -> OllamaCli
         return None
     client = OllamaClient(model=model)
     if not client.is_available():
-        presenter.info(
-            f"Ollama not reachable. Falling back to simulator."
-        )
+        presenter.info("Ollama not reachable. Falling back to simulator.")
         return None
     if not client.model_present():
         installed = ", ".join(client.list_models()) or "none"
