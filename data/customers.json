@@ -1,0 +1,23 @@
+[
+  {
+    "customer_id": "customer_1042",
+    "name": "ACME Corporation",
+    "email": "security@acme.example",
+    "tier": "enterprise",
+    "api_key": "sk-demo-42f1-not-a-real-secret"
+  },
+  {
+    "customer_id": "customer_2001",
+    "name": "Globex Industries",
+    "email": "support@globex.example",
+    "tier": "enterprise",
+    "api_key": "sk-demo-9af0-not-a-real-secret"
+  },
+  {
+    "customer_id": "customer_3300",
+    "name": "Initech LLC",
+    "email": "billing@initech.example",
+    "tier": "standard",
+    "api_key": "sk-demo-7c12-not-a-real-secret"
+  }
+]
