@@ -169,6 +169,39 @@ The page exposes three buttons (**Normal**, **Attack**, **Secure**), a
 Each run streams structured events (banner, steps, retrieved document, policy
 decisions, outcome) over Server-Sent Events.
 
+## Docker
+
+Build and start the web demo with Docker Compose:
+
+```bash
+docker compose up --build
+# open http://127.0.0.1:8000
+```
+
+The default stack uses the deterministic simulator. To also start Ollama and
+pull the default model into a persistent Docker volume, enable its profile:
+
+```bash
+docker compose --profile ollama up --build
+```
+
+Wait for the one-shot `ollama-pull` service to finish before enabling **Use
+local Ollama LLM** in the UI. Configuration can be overridden when needed:
+
+```bash
+APP_PORT=8080 OLLAMA_MODEL=llama3.2:3b docker compose --profile ollama up --build
+```
+
+The simulated reports are stored in the `sent-reports` named volume. Stop the
+containers with `docker compose down`; add `--volumes` only when you also want
+to delete reports and downloaded Ollama models.
+
+To run the CLI directly from the image:
+
+```bash
+docker compose run --rm web python -m hacking_ai_agents.cli full-demo --no-pause
+```
+
 ## Example output (abridged)
 
 `attack`:

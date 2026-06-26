@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the full demo non-interactively. POSIX shells.
+# Run the offensive scan and write an English report. POSIX shells.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -16,4 +16,4 @@ fi
 pip install --upgrade pip >/dev/null
 pip install -e . >/dev/null
 
-python -m hacking_ai_agents.cli full-demo --no-pause "$@"
+python -m agentbreak.cli scan --report "$@"

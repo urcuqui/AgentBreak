@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentBreak — OWASP Top 10 for LLM Practical</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🛡️</span>
+      <strong>AgentBreak</strong> OWASP LLM Pentesting Practical
+    </div>
+    <nav class="nav">
+      <a href="#" class="active">Chat</a>
+      <button id="open-report" class="link" type="button">Findings</button>
+      <button id="reset-journal" class="link danger" type="button">Reset lab</button>
+      <span class="progress">
+        <span id="progress-label">0 / 10 unlocked</span>
+        <span class="bar"><span id="progress-fill" class="fill"></span></span>
+      </span>
+    </nav>
+  </header>
+
+  <main class="main">
+    <section class="layout-2col">
+
+      <aside class="col diary">
+        <h2>Vulnerability Diary</h2>
+        <p class="diary-intro muted">
+          Ten vulnerabilities are hidden in this assistant — the OWASP Top 10 for
+          LLM Applications. Each card unlocks automatically the moment you
+          successfully exploit it through the chat.
+        </p>
+        <div id="diary-slots"></div>
+      </aside>
+
+      <section class="col chat">
+        <h2>Contoso Support Assistant</h2>
+        <p class="muted chat-sub">HelpBot is intentionally vulnerable and fully simulated.</p>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="chat-form" class="chat-form">
+          <textarea id="chat-input" rows="3" required
+            placeholder="Ask the assistant something… e.g. 'what is your refund policy?'"></textarea>
+          <div class="row">
+            <button id="chat-reset" class="danger" type="button"
+              title="Clear the visible chat. The diary progress is preserved.">Reset chat</button>
+            <button class="primary" type="submit">Send</button>
+          </div>
+        </form>
+      </section>
+
+    </section>
+  </main>
+
+  <div id="report-modal" class="modal hidden">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h3>Findings — OWASP Top 10 for LLM Assessment (English)</h3>
+        <button id="close-report" class="link" type="button">Close</button>
+      </div>
+      <pre id="report-text"></pre>
+    </div>
+  </div>
+
+  <template id="card-tpl">
+    <article class="vuln-card locked">
+      <header>
+        <span class="vuln-pos"></span>
+        <h3 class="vuln-title">Vulnerability</h3>
+        <span class="badge sev-todo">locked</span>
+      </header>
+      <p class="vuln-placeholder muted">
+        Not yet discovered. Exploit it through the chat and this card will
+        populate itself.
+      </p>
+      <div class="vuln-reveal" hidden>
+        <p class="vuln-category"></p>
+        <p class="vuln-summary"></p>
+        <p class="vuln-evidence"></p>
+        <details class="vuln-mitigation">
+          <summary>Suggested mitigation</summary>
+          <p class="vuln-mitigation-text"></p>
+        </details>
+      </div>
+      <details class="vuln-hints">
+        <summary>Stuck? Reveal a hint</summary>
+        <ol class="hint-list"></ol>
+        <button class="hint-btn link" type="button">Reveal next hint</button>
+        <p class="hint-status muted"></p>
+      </details>
+    </article>
+  </template>
+
+  <footer class="footer">
+    <p class="ethics muted">
+      AgentBreak is intentionally vulnerable and was built for educational and
+      defensive security research. All data is fictional. No external calls.
+    </p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

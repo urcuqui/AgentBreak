@@ -1,0 +1,44 @@
+name: agentbreak
+
+services:
+  web:
+    build:
+      context: .
+    image: agentbreak:local
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${APP_HOST:-127.0.0.1}:${APP_PORT:-8000}:8000"
+    environment:
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2:3b}"
+    volumes:
+      - reports:/app/reports
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # Optional local model server. Enable with: docker compose --profile ollama up
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  reports:
+  ollama-models:

@@ -1,4 +1,4 @@
-# Run the full demo non-interactively. Windows PowerShell.
+# Run the offensive scan and write an English report. Windows PowerShell.
 $ErrorActionPreference = "Stop"
 
 $here = Split-Path -Parent $PSScriptRoot
@@ -12,4 +12,4 @@ if (-not (Test-Path ".venv")) {
 python -m pip install --upgrade pip | Out-Null
 python -m pip install -e . | Out-Null
 
-python -m hacking_ai_agents.cli full-demo --no-pause @args
+python -m agentbreak.cli scan --report @args

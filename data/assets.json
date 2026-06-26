@@ -1,0 +1,23 @@
+[
+  {
+    "asset_id": "SUB-12",
+    "asset_type": "Electrical Substation",
+    "location": "North Region",
+    "maintenance_status": "Active",
+    "access_token": "grid-demo-token-not-real-9281"
+  },
+  {
+    "asset_id": "SUB-07",
+    "asset_type": "Electrical Substation",
+    "location": "East Region",
+    "maintenance_status": "Active",
+    "access_token": "grid-demo-token-not-real-4412"
+  },
+  {
+    "asset_id": "PLT-03",
+    "asset_type": "Distribution Plant",
+    "location": "Central Region",
+    "maintenance_status": "Scheduled Maintenance",
+    "access_token": "grid-demo-token-not-real-7730"
+  }
+]
