@@ -79,6 +79,7 @@ class Journal:
             entry.discovered_at = r.timestamp
             entry.evidence = r.evidence
             entry.payload = r.payload
+            entry.response_excerpt = r.response_excerpt
             newly.append(r.code)
         if newly:
             self.save()
@@ -90,6 +91,28 @@ class Journal:
 
     def progress(self) -> tuple[int, int]:
         return self.state.unlocked_count, self.state.total
+
+    def to_probe_results(self) -> list[ProbeResult]:
+        """Project the diary's real state into report-shaped rows.
+
+        Unlike :func:`agentbreak.scanner.run_scan`, this reflects only what the
+        user has actually unlocked (via chat or an explicit scan) instead of
+        re-running the full offensive battery from scratch.
+        """
+
+        return [
+            ProbeResult(
+                code=e.code,
+                name=e.title,
+                discovered=e.unlocked,
+                severity=e.severity,
+                payload=e.payload,
+                evidence=e.evidence,
+                response_excerpt=e.response_excerpt,
+                timestamp=e.discovered_at or utcnow(),
+            )
+            for e in self.ordered_entries()
+        ]
 
     def _ensure_complete(self, state: JournalState) -> JournalState:
         base = _initial_state()

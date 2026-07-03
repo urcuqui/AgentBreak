@@ -53,6 +53,7 @@ class JournalEntry(BaseModel):
     discovered_at: datetime | None = None
     evidence: str = ""
     payload: str = ""
+    response_excerpt: str = ""
 
     def locked_blurb(self) -> str:
         return (

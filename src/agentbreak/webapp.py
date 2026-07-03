@@ -113,8 +113,10 @@ def create_app() -> FastAPI:
 
     @app.post("/api/report")
     async def report() -> JSONResponse:
-        results = run_scan()
-        Journal().apply_results(results)
+        # Report exactly what the user unlocked via chat/scan — never re-run
+        # the full offensive battery, or every report would read 10/10
+        # regardless of what actually happened in the conversation.
+        results = Journal().to_probe_results()
         paths = save_report(results)
         return JSONResponse({"paths": paths, "markdown": render_markdown(results)})
 

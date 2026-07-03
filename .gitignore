@@ -49,3 +49,6 @@ Thumbs.db
 logs/
 *.log
 sent_reports/
+reports/*.md
+reports/*.json
+!reports/.gitkeep
