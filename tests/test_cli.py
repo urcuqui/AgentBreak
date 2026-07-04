@@ -42,6 +42,17 @@ def test_scan_with_report_writes_file(tmp_path) -> None:
     assert list((tmp_path / "reports").glob("report_*.md"))
 
 
+def test_scan_with_report_can_skip_journal(tmp_path) -> None:
+    result = runner.invoke(app, ["scan", "--report", "--no-journal"])
+    assert result.exit_code == 0
+    assert "Report written" in result.stdout
+    assert list((tmp_path / "reports").glob("report_*.md"))
+
+    journal = runner.invoke(app, ["journal"])
+    assert journal.exit_code == 0
+    assert "0/10" in journal.stdout
+
+
 def test_journal_shows_progress() -> None:
     result = runner.invoke(app, ["journal"])
     assert result.exit_code == 0
@@ -60,3 +71,7 @@ def test_report_command_writes_both_artifacts(tmp_path) -> None:
     assert result.exit_code == 0
     assert list((tmp_path / "reports").glob("report_*.md"))
     assert list((tmp_path / "reports").glob("report_*.json"))
+
+    journal = runner.invoke(app, ["journal"])
+    assert journal.exit_code == 0
+    assert "0/10" in journal.stdout

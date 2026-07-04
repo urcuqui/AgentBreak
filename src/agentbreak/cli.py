@@ -69,12 +69,16 @@ def cmd_chat(
 def cmd_scan(
     only: str = typer.Option(None, "--only", help="Comma list, e.g. LLM01,LLM06."),
     report: bool = typer.Option(False, "--report", help="Also write a report."),
+    no_journal: bool = typer.Option(
+        False,
+        "--no-journal",
+        help="Do not persist scan findings to the unlocking journal.",
+    ),
 ) -> None:
     """Run the offensive probes and unlock the matching journal pages."""
 
     results = run_scan(only=_parse_only(only))
-    journal = Journal()
-    newly = journal.apply_results(results)
+    newly = [] if no_journal else Journal().apply_results(results)
 
     table = Table(title="OWASP Top 10 for LLM — scan results")
     table.add_column("Code"); table.add_column("Category")
@@ -118,7 +122,6 @@ def cmd_report(
     """Run a scan and write an English Markdown + JSON report under reports/."""
 
     results = run_scan(only=_parse_only(only))
-    Journal().apply_results(results)
     paths = save_report(results)
     console.print(f"Markdown: {paths['markdown']}")
     console.print(f"JSON:     {paths['json']}")

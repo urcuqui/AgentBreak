@@ -12,4 +12,4 @@ if (-not (Test-Path ".venv")) {
 python -m pip install --upgrade pip | Out-Null
 python -m pip install -e . | Out-Null
 
-python -m agentbreak.cli scan --report @args
+python -m agentbreak.cli scan --report --no-journal @args

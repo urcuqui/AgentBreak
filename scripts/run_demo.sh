@@ -16,4 +16,4 @@ fi
 pip install --upgrade pip >/dev/null
 pip install -e . >/dev/null
 
-python -m agentbreak.cli scan --report "$@"
+python -m agentbreak.cli scan --report --no-journal "$@"
