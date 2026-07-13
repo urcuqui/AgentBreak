@@ -155,7 +155,7 @@ A FastAPI + SSE single-page UI is included to make the demo more visual on a
 projector. Start it with:
 
 ```bash
-python -m hacking_ai_agents.cli serve --host 127.0.0.1 --port 8000
+python -m gentbreak.cli serve --host 127.0.0.1 --port 8000
 # then open http://127.0.0.1:8000
 ```
 
