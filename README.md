@@ -149,6 +149,31 @@ Convenience launchers:
 .\scripts\run_demo.ps1                # Windows
 ```
 
+## Offensive scan & report
+
+The `agentbreak` package (`src/agentbreak/`) implements the OWASP Top 10 for
+LLM lab that generates the attack probes and the assessment report:
+
+* **Attack engine** — [`scanner.py`](src/agentbreak/scanner.py). `run_scan()`
+  runs each offensive probe defined in [`probes.py`](src/agentbreak/probes.py)
+  (one per OWASP Top 10 for LLM category) against the simulated chatbot in
+  [`chatbot.py`](src/agentbreak/chatbot.py) and returns a `ProbeResult` per
+  category (discovered or not, severity, payload, evidence).
+* **Report generator** — [`reporting.py`](src/agentbreak/reporting.py).
+  `save_report(results)` renders the scan results into a Markdown + JSON pair
+  under `reports/` (`report_<timestamp>.md` / `.json`), including a summary
+  table, per-finding evidence and remediation.
+
+Both are wired into the CLI ([`cli.py`](src/agentbreak/cli.py)):
+
+```bash
+python -m agentbreak.cli scan                 # run all probes, print results table
+python -m agentbreak.cli scan --only LLM01,LLM06
+python -m agentbreak.cli scan --report         # scan + write the report
+python -m agentbreak.cli scan --no-journal     # scan without persisting to the journal
+python -m agentbreak.cli report                # scan and only write the report
+```
+
 ## Web app (visual demo)
 
 A FastAPI + SSE single-page UI is included to make the demo more visual on a
