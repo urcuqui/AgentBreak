@@ -52,3 +52,6 @@ sent_reports/
 reports/*.md
 reports/*.json
 !reports/.gitkeep
+artifacts/*.md
+artifacts/*.json
+!artifacts/.gitkeep

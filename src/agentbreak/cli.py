@@ -2,7 +2,11 @@
 
 Commands
 --------
-* ``chat``    talk to the simulated vulnerable chatbot.
+* ``normal``  / ``attack`` / ``secure``  run the flagship indirect-prompt-
+  injection scenario against the grid-operations agent in each mode.
+* ``run``     run any registered scenario by name with ``--mode``.
+* ``list``    list the registered scenarios.
+* ``chat``    talk to the simulated vulnerable chatbot (broad OWASP-10 lab).
 * ``scan``    run the offensive probes and unlock journal pages.
 * ``journal`` show the OWASP Top 10 diary (locked / unlocked).
 * ``report``  run a scan and write an English Markdown + JSON report.
@@ -17,14 +21,33 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from .agent.evidence import append_finding
+from .agent.scenario import SCENARIO_NAME, run_indirect_injection
 from .chatbot import SimChatbot
 from .journal import Journal
 from .llm import DEFAULT_MODEL, OllamaClient
 from .reporting import save_report
 from .scanner import run_scan, summarize
 
-app = typer.Typer(add_completion=False, help="AgentBreak — OWASP Top 10 for LLM lab.")
+app = typer.Typer(add_completion=False, help="AgentBreak — an offensive and defensive AI security lab.")
 console = Console()
+
+SCENARIOS: dict[str, str] = {
+    SCENARIO_NAME: "Retrieved document poisons an SOC agent's tool use (indirect prompt injection).",
+}
+
+
+def _run_scenario(scenario: str, mode: str, no_evidence: bool) -> None:
+    if scenario != SCENARIO_NAME:
+        console.print(f"[red]Unknown scenario '{scenario}'.[/red] Run `agentbreak list`.")
+        raise typer.Exit(code=1)
+    if mode not in ("normal", "attack", "secure"):
+        console.print(f"[red]--mode must be one of normal|attack|secure, got '{mode}'.[/red]")
+        raise typer.Exit(code=2)
+    run = run_indirect_injection(mode, console=console)  # type: ignore[arg-type]
+    if not no_evidence:
+        paths = append_finding(run)
+        console.print(f"[dim]Evidence appended: {paths['markdown']}[/dim]")
 
 
 def _parse_only(only: str | None) -> list[str] | None:
@@ -42,6 +65,53 @@ def _maybe_client(use_llm: bool, model: str) -> OllamaClient | None:
         return None
     console.print(f"[green]Using Ollama (model={model}) for benign replies.[/green]")
     return client
+
+
+@app.command("list")
+def cmd_list() -> None:
+    """List the registered scenarios."""
+
+    table = Table(title="AgentBreak scenarios")
+    table.add_column("Name")
+    table.add_column("Description")
+    for name, desc in SCENARIOS.items():
+        table.add_row(name, desc)
+    console.print(table)
+
+
+@app.command("run")
+def cmd_run(
+    scenario: str = typer.Argument(SCENARIO_NAME, help="Scenario name, e.g. indirect-injection."),
+    mode: str = typer.Option(None, "--mode", help="normal | attack | secure (required)"),
+    no_evidence: bool = typer.Option(False, "--no-evidence", help="Do not append to artifacts/attack_report.*"),
+) -> None:
+    """Run a scenario in the given mode."""
+
+    if mode is None:
+        console.print("[red]--mode is required (normal|attack|secure).[/red]")
+        raise typer.Exit(code=2)
+    _run_scenario(scenario, mode, no_evidence)
+
+
+@app.command("normal")
+def cmd_normal(no_evidence: bool = typer.Option(False, "--no-evidence")) -> None:
+    """Run the flagship scenario with a benign context and the policy layer engaged."""
+
+    _run_scenario(SCENARIO_NAME, "normal", no_evidence)
+
+
+@app.command("attack")
+def cmd_attack(no_evidence: bool = typer.Option(False, "--no-evidence")) -> None:
+    """Run the flagship scenario with a poisoned context and no policy layer (vulnerable path)."""
+
+    _run_scenario(SCENARIO_NAME, "attack", no_evidence)
+
+
+@app.command("secure")
+def cmd_secure(no_evidence: bool = typer.Option(False, "--no-evidence")) -> None:
+    """Replay the exact same poisoned context with the policy layer engaged (hardened path)."""
+
+    _run_scenario(SCENARIO_NAME, "secure", no_evidence)
 
 
 @app.command("chat")
@@ -81,8 +151,10 @@ def cmd_scan(
     newly = [] if no_journal else Journal().apply_results(results)
 
     table = Table(title="OWASP Top 10 for LLM — scan results")
-    table.add_column("Code"); table.add_column("Category")
-    table.add_column("Result"); table.add_column("Severity")
+    table.add_column("Code")
+    table.add_column("Category")
+    table.add_column("Result")
+    table.add_column("Severity")
     for r in results:
         mark = "[red]VULNERABLE[/red]" if r.discovered else "[green]ok[/green]"
         table.add_row(r.code, r.name, mark, r.severity)
@@ -142,10 +214,10 @@ def cmd_serve(
 
 def main(argv: list[str] | None = None) -> int:
     try:
-        app(args=argv if argv is not None else None, standalone_mode=False)
+        rv = app(args=argv if argv is not None else None, standalone_mode=False)
     except typer.Exit as exc:  # pragma: no cover
         return int(exc.exit_code or 0)
-    return 0
+    return int(rv) if isinstance(rv, int) else 0
 
 
 if __name__ == "__main__":
