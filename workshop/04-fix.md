@@ -68,7 +68,8 @@ Failed: 0
 SECURITY GATE: PASSED
 ```
 
-`AB-REG-005` still replays the byte-identical payload from your attack run.
+Your generated case (`AB-REG-005` in this example) still replays the
+byte-identical payload from your attack run.
 Its `attack_payload_sha256` matches `payload_sha256` in the evidence. The
 attack stayed the same and the control changed.
 

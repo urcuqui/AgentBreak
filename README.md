@@ -11,8 +11,8 @@
 
 ## 1. What is AgentBreak?
 
-**An offensive and defensive AI security lab for breaking, observing, and
-hardening tool-using AI agents.**
+**An offensive and defensive AI agent security lab for breaking, observing,
+hardening, replaying, and regression-testing tool-using AI agents.**
 
 AgentBreak ships two labs in one repository:
 
@@ -20,7 +20,9 @@ AgentBreak ships two labs in one repository:
   retrieves an operational document to answer a question, and can be
   manipulated by a hidden instruction planted inside that document —
   indirect prompt injection, tool misuse, and deterministic policy
-  enforcement, end to end.
+  enforcement, end to end. Successful attacks are replayed against the
+  hardened policy and turned into security regression tests that gate CI
+  (see [AI Security Regression Testing](#ai-security-regression-testing)).
 * A **broader OWASP Top 10 for LLM lab** (`agentbreak.chatbot` /
   `agentbreak.probes`): one offensive probe per official category, run with
   `agentbreak.cli scan`, unlocked page by page in a diary as you find them.
@@ -303,13 +305,19 @@ back to the source run (run ID, payload sha256, original result, requested
 tools, trust boundary):
 
 ```bash
-agentbreak run indirect-injection --mode attack     # ... run_id=AB-RUN-1002
-agentbreak create-test AB-RUN-1002                  # -> tests/security_cases/AB-REG-005.json
+agentbreak run indirect-injection --mode attack     # prints e.g. run_id=AB-RUN-1002
+agentbreak create-test <run-id>                     # e.g. -> tests/security_cases/AB-REG-005.json
 ```
 
-`create-test` refuses evidence it can't turn into a deterministic assertion:
-unknown run IDs, normal or secure runs, attacks that crossed no boundary, and
-payloads that no longer match their recorded hash.
+Run IDs and case IDs are sequential per checkout, so yours may differ.
+
+`create-test` creates a regression test only from an **attack** run (controls
+disabled) that produced observable security impact (`ATTACK_SUCCESS` or
+`PARTIALLY_MITIGATED`). The run must also hold enough evidence to replay the
+same adversarial condition deterministically: the full payload, still
+matching its recorded sha256, plus the task and user input. It refuses
+unknown run IDs, normal runs, secure-mode replays, and attack runs with no
+impact, and says why.
 
 `verify` replays every case through both postures. The policy-off run checks
 that the case still reproduces its attack. The policy-on run checks that the
@@ -323,10 +331,15 @@ agentbreak verify --json     # machine-readable
 
 It also writes `artifacts/security_regression_report.{json,md}`, which shows
 expected vs observed per case and keeps *agent influenced* separate from
-*security boundary crossed*. `pytest` runs the same corpus through the same
-runner (`agentbreak.agent.regression`). `.github/workflows/ai-security.yml`
-runs `python -m agentbreak verify` on every push and pull request, so a
-security regression fails the build.
+*security boundary crossed*. Under the secure posture the agent may still be
+manipulated into requesting a tool. That is influence, not compromise, and
+the case passes as long as the policy layer keeps the boundary intact.
+
+`pytest` runs the same corpus through the same runner
+(`agentbreak.agent.regression`). `.github/workflows/ai-security.yml` runs
+`pytest` (does the project still work?) and then `python -m agentbreak verify`
+(does the security posture still hold?) on every push and pull request. A
+failure in either one fails the build.
 
 **Workshop:** a 120-minute hands-on walkthrough (normal → attack → create test
 → fix → retest → CI gate), including an isolated, intentionally vulnerable

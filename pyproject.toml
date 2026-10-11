@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agentbreak"
 version = "0.2.0"
-description = "AgentBreak: an offensive lab for the OWASP Top 10 for LLM Applications, built around a simulated vulnerable chatbot, a probe framework, an unlocking journal and an English report generator."
+description = "An offensive and defensive AI agent security lab for breaking, observing, hardening, replaying, and regression-testing tool-using AI agents, plus a broader OWASP Top 10 for LLM lab."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "AgentBreak" }]
-keywords = ["ai", "security", "owasp", "llm", "prompt-injection", "ollama", "education"]
+keywords = ["ai", "security", "ai-agents", "llm", "prompt-injection", "tool-misuse", "security-regression-testing", "devsecops", "owasp", "ollama", "education"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Education",

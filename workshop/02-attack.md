@@ -51,7 +51,8 @@ ATTACK_SUCCESS
 run_id=AB-RUN-1002
 ```
 
-📝 **Write down your `run_id`.** You will turn it into a test in module 03.
+📝 **Write down your `run_id`** (yours may differ from `AB-RUN-1002`). You will
+turn it into a test in module 03.
 
 ## Observe: read the evidence, not the banner
 

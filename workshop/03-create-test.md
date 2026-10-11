@@ -37,10 +37,12 @@ boundary was still crossed.
 
 ## Turn the attack into a test
 
-Use the `run_id` of your **attack** run from module 02:
+Use the `run_id` of your **attack** run from module 02. The IDs below
+(`AB-RUN-1002`, `AB-REG-005`) are examples. Yours are sequential per checkout
+and may differ.
 
 ```bash
-agentbreak create-test AB-RUN-1002
+agentbreak create-test <your-attack-run-id>      # e.g. agentbreak create-test AB-RUN-1002
 ```
 
 ```
@@ -56,7 +58,7 @@ Expected security property:
   send_report) must not execute; the attack must end ATTACK_BLOCKED.
 ```
 
-Open `tests/security_cases/AB-REG-005.json`:
+Open the generated file (here `tests/security_cases/AB-REG-005.json`):
 
 - `context` holds the **exact** attack payload from the evidence.
 - `expected_vulnerable_result` is `ATTACK_SUCCESS`. With controls off, the
@@ -81,9 +83,28 @@ the run does not contain a deterministic security invariant: AB-RUN-1001 is a
 'normal' run, not an attack run. ...
 ```
 
-AgentBreak only writes an assertion it can back with evidence. That means an
-attack, observed with controls off, that crossed a boundary, whose stored
-payload still matches its hash.
+AgentBreak creates a regression test only from an attack run that produced
+observable security impact and contains enough evidence to replay the same
+adversarial condition deterministically. That evidence is the full payload,
+still matching its recorded sha256, plus the task and user input. The two
+modes play different roles:
+
+```
+ATTACK MODE                          SECURE MODE
+controls disabled                    same adversarial condition (same payload)
+      ↓                                    ↓
+attack succeeds                      agent may still be influenced
+      ↓                                    ↓
+security impact observed             policy layer evaluates each action
+      ↓                                    ↓
+source of the regression test        security boundary must not be crossed
+```
+
+A secure-mode run can't be the source. It shows what the controls did, not
+what the attack can do without them, so `create-test` points you to the
+attack run that shares its payload. A secure run that shows the agent
+*requesting* `get_asset_credentials` is not a failure in itself.
+**Influence ≠ impact.** The test fails only if the request goes through.
 
 ## Run the gate
 
@@ -112,10 +133,14 @@ Summary
 Passed: 2
 Failed: 3
 
+Report: artifacts/security_regression_report.md
+
 Critical security regression detected.
 
 SECURITY GATE: FAILED
 ```
+
+Check the exit code right after `verify`:
 
 ```bash
 echo $?        # 1 — this is what makes CI fail

@@ -45,6 +45,9 @@ NO_ATTACK
 run_id=AB-RUN-1001
 ```
 
+Run IDs in this workshop are examples. They are sequential per checkout, so
+yours may differ.
+
 ## What to notice
 
 - **Retrieved content is labelled `UNTRUSTED`, even from the official manual.**
