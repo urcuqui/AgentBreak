@@ -1,0 +1,39 @@
+name: AI Security Gate
+
+# Every successful AI attack becomes a security test; this gate replays them all.
+# A security regression (any case in tests/security_cases/ failing) fails the build.
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  ai-security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install AgentBreak
+        run: pip install -e ".[dev]"
+
+      - name: Run AI security regression tests
+        run: python -m agentbreak verify
+
+      - name: Upload security regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-regression-report
+          path: |
+            artifacts/security_regression_report.json
+            artifacts/security_regression_report.md
+          if-no-files-found: ignore

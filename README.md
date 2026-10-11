@@ -287,6 +287,51 @@ The OWASP-10 lab keeps its own, separate report format under `reports/`
 (`agentbreak.cli scan --report` / `report`) — unrelated to the artifacts
 above.
 
+## AI Security Regression Testing
+
+> **Every successful AI attack should become a security test.**
+
+```
+Attack → Evidence → Regression Test → CI Gate
+```
+
+Each scenario run prints a `run_id` and records it in the evidence report.
+`create-test` turns an **attack** run into a case under
+`tests/security_cases/`. The case keeps the byte-identical payload, the
+invariant the secure posture must hold, and a `provenance` block that links
+back to the source run (run ID, payload sha256, original result, requested
+tools, trust boundary):
+
+```bash
+agentbreak run indirect-injection --mode attack     # ... run_id=AB-RUN-1002
+agentbreak create-test AB-RUN-1002                  # -> tests/security_cases/AB-REG-005.json
+```
+
+`create-test` refuses evidence it can't turn into a deterministic assertion:
+unknown run IDs, normal or secure runs, attacks that crossed no boundary, and
+payloads that no longer match their recorded hash.
+
+`verify` replays every case through both postures. The policy-off run checks
+that the case still reproduces its attack. The policy-on run checks that the
+secure outcome holds and that no `prohibited_tools` executed. It exits `1` on
+any regression:
+
+```bash
+agentbreak verify            # human-readable, ends with SECURITY GATE: PASSED|FAILED
+agentbreak verify --json     # machine-readable
+```
+
+It also writes `artifacts/security_regression_report.{json,md}`, which shows
+expected vs observed per case and keeps *agent influenced* separate from
+*security boundary crossed*. `pytest` runs the same corpus through the same
+runner (`agentbreak.agent.regression`). `.github/workflows/ai-security.yml`
+runs `python -m agentbreak verify` on every push and pull request, so a
+security regression fails the build.
+
+**Workshop:** a 120-minute hands-on walkthrough (normal → attack → create test
+→ fix → retest → CI gate), including an isolated, intentionally vulnerable
+policy change, lives in [`workshop/README.md`](workshop/README.md).
+
 ## 11. Security mappings
 
 See [`docs/security-mappings.md`](docs/security-mappings.md). AgentBreak
@@ -395,7 +440,9 @@ pytest
 Covers: the flagship scenario's policy controls
 (`tests/test_agent_policy.py`), the normal/attack/secure integration path
 (`tests/test_scenario.py`), the regression corpus
-(`tests/test_security_cases.py`, `tests/security_cases/*.json`), and the
+(`tests/test_security_cases.py`, `tests/security_cases/*.json`), the
+`verify` / `create-test` workflow and workshop patch
+(`tests/test_regression.py`), and the
 existing OWASP-10 lab (`tests/test_chatbot.py`, `tests/test_probes_scanner.py`,
 `tests/test_journal.py`, `tests/test_reporting.py`, `tests/test_cli.py`,
 `tests/test_web.py`).

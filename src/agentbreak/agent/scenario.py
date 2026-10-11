@@ -150,6 +150,8 @@ def run_document(
     return ScenarioRun(
         scenario=SCENARIO_NAME,
         mode=mode,
+        task=task,
+        question=question,
         events=telemetry.events,
         document=doc,
         proposed_calls=proposed,

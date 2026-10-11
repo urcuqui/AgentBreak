@@ -25,7 +25,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"usage: python run_demo.py {{{'|'.join(MODES)}}}")
         return 2
     run = run_indirect_injection(argv[0])  # type: ignore[arg-type]
-    append_finding(run)
+    paths = append_finding(run)
+    print(f"run_id={paths['run_id']}")
     return 0
 
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,10 @@ from .agent_models import ScenarioRun, utcnow
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
+
+RUN_ID_PREFIX = "AB-RUN-"
+_RUN_ID_RE = re.compile(r"^AB-RUN-(\d+)$")
+_FIRST_RUN_NUMBER = 1001
 
 _TECHNIQUE_BY_MODE = {
     "normal": "n/a (benign context)",
@@ -43,11 +48,16 @@ def build_finding(run: ScenarioRun) -> dict[str, Any]:
         "timestamp": utcnow().isoformat(),
         "scenario": run.scenario,
         "mode": run.mode,
+        "task": run.task,
+        "user_input": run.question,
         "attack_technique": _TECHNIQUE_BY_MODE[run.mode],
         "context_source": run.document.source if run.document else None,
         "trust_level": run.document.trust_level if run.document else None,
         "payload_excerpt": payload_text[:280],
         "payload_sha256": payload_hash,
+        # Full payload, so `agentbreak create-test` can replay the identical
+        # attack; payload_sha256 lets it prove nothing changed in between.
+        "payload": payload_text,
         "agent_decision": [c.tool_name for c in run.proposed_calls],
         "tool_requested": [c.tool_name for c in run.proposed_calls if c.tool_name != "search_knowledge_base"],
         "tool_arguments": [c.arguments for c in run.proposed_calls],
@@ -82,8 +92,9 @@ def _render_markdown(findings: list[dict[str, Any]]) -> str:
         "",
     ]
     for f in findings:
+        run_id = f"{f['run_id']} — " if f.get("run_id") else ""
         lines += [
-            f"## {f['timestamp']} — mode={f['mode']} — {f['final_result']}",
+            f"## {run_id}{f['timestamp']} — mode={f['mode']} — {f['final_result']}",
             "",
             f"- **Scenario:** {f['scenario']}",
             f"- **Attack technique:** {f['attack_technique']}",
@@ -100,24 +111,48 @@ def _render_markdown(findings: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def next_run_id(findings: list[dict[str, Any]]) -> str:
+    """Return the next sequential ``AB-RUN-<n>`` id for this evidence report."""
+
+    numbers = [
+        int(m.group(1))
+        for f in findings
+        if (m := _RUN_ID_RE.match(str(f.get("run_id", ""))))
+    ]
+    return f"{RUN_ID_PREFIX}{max(numbers, default=_FIRST_RUN_NUMBER - 1) + 1}"
+
+
+def load_findings(out_dir: Path | None = None) -> list[dict[str, Any]]:
+    """Read the cumulative evidence report; an absent or unreadable one is empty."""
+
+    json_path = (out_dir or DEFAULT_ARTIFACTS_DIR) / "attack_report.json"
+    if not json_path.exists():
+        return []
+    try:
+        findings = json.loads(json_path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return []
+    return findings if isinstance(findings, list) else []
+
+
 def append_finding(
     run: ScenarioRun, out_dir: Path | None = None
 ) -> dict[str, str]:
-    """Append this run's finding to the cumulative attack report and rewrite it."""
+    """Append this run's finding to the cumulative attack report and rewrite it.
+
+    The finding gets a sequential ``run_id`` (``AB-RUN-1001``, ...) that
+    ``agentbreak create-test <run-id>`` uses to turn it into a regression case.
+    """
 
     out_dir = out_dir or DEFAULT_ARTIFACTS_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / "attack_report.json"
     md_path = out_dir / "attack_report.md"
 
-    findings: list[dict[str, Any]] = []
-    if json_path.exists():
-        try:
-            findings = json.loads(json_path.read_text(encoding="utf-8"))
-        except (ValueError, OSError):
-            findings = []
-    findings.append(build_finding(run))
+    findings = load_findings(out_dir)
+    run_id = next_run_id(findings)
+    findings.append({"run_id": run_id, **build_finding(run)})
 
     json_path.write_text(json.dumps(findings, indent=2), encoding="utf-8")
     md_path.write_text(_render_markdown(findings), encoding="utf-8")
-    return {"json": str(json_path), "markdown": str(md_path)}
+    return {"json": str(json_path), "markdown": str(md_path), "run_id": run_id}

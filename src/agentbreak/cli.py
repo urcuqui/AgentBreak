@@ -6,6 +6,8 @@ Commands
   injection scenario against the grid-operations agent in each mode.
 * ``run``     run any registered scenario by name with ``--mode``.
 * ``list``    list the registered scenarios.
+* ``verify``  run the AI security regression suite (CI security gate).
+* ``create-test``  turn an attack run's evidence into a regression case.
 * ``chat``    talk to the simulated vulnerable chatbot (broad OWASP-10 lab).
 * ``scan``    run the offensive probes and unlock journal pages.
 * ``journal`` show the OWASP Top 10 diary (locked / unlocked).
@@ -15,12 +17,16 @@ Commands
 
 from __future__ import annotations
 
+import json
 import sys
+from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
+from .agent import regression
 from .agent.evidence import append_finding
 from .agent.scenario import SCENARIO_NAME, run_indirect_injection
 from .chatbot import SimChatbot
@@ -48,6 +54,7 @@ def _run_scenario(scenario: str, mode: str, no_evidence: bool) -> None:
     if not no_evidence:
         paths = append_finding(run)
         console.print(f"[dim]Evidence appended: {paths['markdown']}[/dim]")
+        console.print(f"run_id={paths['run_id']}")
 
 
 def _parse_only(only: str | None) -> list[str] | None:
@@ -112,6 +119,90 @@ def cmd_secure(no_evidence: bool = typer.Option(False, "--no-evidence")) -> None
     """Replay the exact same poisoned context with the policy layer engaged (hardened path)."""
 
     _run_scenario(SCENARIO_NAME, "secure", no_evidence)
+
+
+def _opt_path(value: str | None) -> Path | None:
+    return Path(value) if value else None
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
+@app.command("verify")
+def cmd_verify(
+    json_output: bool = typer.Option(False, "--json", help="Print a machine-readable result."),
+    cases_dir: str = typer.Option(None, "--cases-dir", help="Defaults to tests/security_cases/."),
+    report_dir: str = typer.Option(None, "--report-dir", help="Defaults to artifacts/."),
+    no_report: bool = typer.Option(
+        False, "--no-report", help="Do not write artifacts/security_regression_report.*"
+    ),
+) -> None:
+    """Run the AI security regression suite. Exit code 1 on any security regression."""
+
+    suite = regression.run_suite(_opt_path(cases_dir))
+    paths = None if no_report else regression.write_report(suite, _opt_path(report_dir))
+
+    if json_output:
+        typer.echo(json.dumps(suite.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        title = "AgentBreak Security Regression Suite"
+        console.print(f"[bold]{title}[/bold]\n{'=' * len(title)}\n")
+        for c in suite.cases:
+            mark = "[green]✓[/green]" if c.passed else "[red]✗[/red]"
+            console.print(f"{mark} {c.id}  {escape(c.title)}")
+            for reason in c.reasons:
+                console.print(f"    [red]{escape(reason)}[/red]")
+        if not suite.cases:
+            console.print("[red]No security cases found.[/red]")
+        console.print(
+            f"\nSummary\n-------\nPassed: {suite.passed}\nFailed: {suite.failed}\n"
+        )
+        if paths:
+            console.print(f"[dim]Report: {_display_path(Path(paths['markdown']))}[/dim]\n", soft_wrap=True)
+        if suite.critical:
+            console.print("[bold red]Critical security regression detected.[/bold red]\n")
+        elif suite.failed:
+            console.print("[bold red]Security regression detected.[/bold red]\n")
+        color = "green" if suite.status == "PASSED" else "red"
+        console.print(f"[bold {color}]SECURITY GATE: {suite.status}[/bold {color}]")
+
+    if suite.status != "PASSED":
+        raise typer.Exit(code=1)
+
+
+@app.command("create-test")
+def cmd_create_test(
+    run_id: str = typer.Argument(..., help="Run ID from an attack run, e.g. AB-RUN-1002."),
+    evidence_dir: str = typer.Option(
+        None, "--evidence-dir", help="Directory holding attack_report.json. Defaults to artifacts/."
+    ),
+    cases_dir: str = typer.Option(None, "--cases-dir", help="Defaults to tests/security_cases/."),
+) -> None:
+    """Turn an attack run's evidence into a reproducible security regression case."""
+
+    try:
+        path, case = regression.create_case_from_run(
+            run_id, evidence_dir=_opt_path(evidence_dir), cases_dir=_opt_path(cases_dir)
+        )
+    except regression.RegressionCaseError as exc:
+        console.print(f"[red]Cannot create regression test:[/red]\n{escape(str(exc))}")
+        raise typer.Exit(code=1) from exc
+
+    prov = case["provenance"]
+    console.print("[bold green]Security regression created:[/bold green]\n")
+    console.print(f"  {_display_path(path)}\n")
+    console.print("[bold]Source run:[/bold]")
+    console.print(
+        f"  {prov['source_run_id']}  ({prov['source_mode']}, {prov['original_result']}, "
+        f"payload sha256 {prov['attack_payload_sha256'][:12]}…)\n"
+    )
+    console.print("[bold]Expected security property:[/bold]")
+    console.print(f"  {escape(case['security_invariant'])}\n")
+    console.print("Next: [bold]agentbreak verify[/bold]")
 
 
 @app.command("chat")

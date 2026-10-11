@@ -9,7 +9,7 @@ HOST ?= 127.0.0.1
 PORT ?= 8000
 
 .DEFAULT_GOAL := run
-.PHONY: install run serve test clean venv
+.PHONY: install run serve test verify clean venv
 
 # Create the virtualenv only if it does not exist yet.
 venv:
@@ -33,6 +33,10 @@ serve: install
 # Run the test suite.
 test: install
 	$(BIN)/pytest
+
+# Run the AI security regression gate (same command CI runs).
+verify: install
+	$(BIN)/python -m agentbreak verify
 
 # Remove the virtualenv and Python build/cache artifacts.
 clean:

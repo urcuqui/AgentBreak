@@ -97,6 +97,8 @@ class ScenarioRun(BaseModel):
 
     scenario: str
     mode: ScenarioMode
+    task: str = ""
+    question: str = ""
     events: list[ScenarioEvent] = Field(default_factory=list)
     document: RetrievedDocument | None = None
     proposed_calls: list[ToolCall] = Field(default_factory=list)

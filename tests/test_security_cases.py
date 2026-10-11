@@ -4,6 +4,9 @@ Each file under ``tests/security_cases/`` describes one context an agent
 might retrieve, plus the result the vulnerable and secure paths are expected
 to reach. This is the corpus the brief asks for: a small, versioned set of
 inputs that keeps proving the same attacks stay caught as the code changes.
+
+The case runner lives in :mod:`agentbreak.agent.regression` so this test and
+``agentbreak verify`` (the CI security gate) share one definition of "pass".
 """
 
 from __future__ import annotations
@@ -13,8 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from agentbreak.agent import scenario
-from agentbreak.agent.agent_models import RetrievedDocument
+from agentbreak.agent.regression import run_case
 
 CASES_DIR = Path(__file__).parent / "security_cases"
 CASE_FILES = sorted(CASES_DIR.glob("*.json"))
@@ -33,30 +35,8 @@ def _isolated_outbox(monkeypatch, tmp_path: Path):
 
 @pytest.mark.parametrize("case_file", CASE_FILES, ids=[f.stem for f in CASE_FILES])
 def test_security_case(case_file: Path) -> None:
-    case = _load(case_file)
-    task = case.get("task", scenario.TASK)
-    approved = case.get("approved", False)
-    doc = RetrievedDocument(
-        document_id=case["scenario"],
-        title=case["scenario"],
-        content=case["context"],
-        source=f"regression-case:{case['scenario']}",
-        trust_level="untrusted",
-    )
-
-    vulnerable = scenario.run_document(case["input"], doc, "attack", task=task, quiet=True)
-    secure = scenario.run_document(
-        case["input"], doc, "secure", task=task, approved=approved, quiet=True
-    )
-
-    assert vulnerable.final_status == case["expected_vulnerable_result"], (
-        f"{case_file.name}: vulnerable path expected "
-        f"{case['expected_vulnerable_result']!r}, got {vulnerable.final_status!r}"
-    )
-    assert secure.final_status == case["expected_secure_result"], (
-        f"{case_file.name}: secure path expected "
-        f"{case['expected_secure_result']!r}, got {secure.final_status!r}"
-    )
+    result = run_case(case_file, _load(case_file))
+    assert result.passed, f"{case_file.name} ({result.id}): {result.reason}"
 
 
 def test_corpus_is_not_empty() -> None:
