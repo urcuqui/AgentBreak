@@ -220,12 +220,15 @@ def test_create_test_generates_valid_case_with_provenance(
 ) -> None:
     result = runner.invoke(app, ["create-test", "AB-RUN-1002", "--evidence-dir",
                                  str(evidence_dir), "--cases-dir", str(cases_dir)])
+    generated = cases_dir / "AB-REG-005.json"
+
     assert result.exit_code == 0, result.stdout
     assert "Security regression created" in result.stdout
-    assert "AB-REG-005.json" in result.stdout
+    # Check the file, not the printed path: Rich wraps long paths at terminal width.
+    assert generated.exists()
 
     finding = json.loads((evidence_dir / "attack_report.json").read_text())[1]
-    case = json.loads((cases_dir / "AB-REG-005.json").read_text(encoding="utf-8"))
+    case = json.loads(generated.read_text(encoding="utf-8"))
 
     # Same schema the existing corpus uses.
     for key in ("scenario", "input", "context", "expected_vulnerable_result",
