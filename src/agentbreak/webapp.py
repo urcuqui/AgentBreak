@@ -1,21 +1,31 @@
 """FastAPI web app for AgentBreak.
 
-Serves a two-column lab UI: a Vulnerability Diary of ten locked cards on the
-left and the simulated support assistant on the right. Each card unlocks
-automatically the moment the matching OWASP Top 10 for LLM vulnerability is
-exploited through the chat; a Findings view generates the English report.
+One shell, two separate labs:
+
+* ``/owasp`` -- the OWASP LLM Top 10 Lab: a Vulnerability Diary of ten locked
+  cards next to the simulated Contoso support assistant. Each card unlocks the
+  moment the matching category is exploited through the chat.
+* ``/trust`` -- the Agent Trust Lab: the flagship indirect-injection scenario
+  (normal / attack / secure), its evidence, attack -> regression test, and the
+  local security gate. Routes here only call :mod:`agentbreak.trustlab`, which
+  drives the same core as the CLI.
 """
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from . import trustlab
+from .agent.regression import RegressionCaseError
+from .agent.scenario import SCENARIO_NAME
+from .agent.workshop import BASELINE
 from .chatbot import SimChatbot
 from .journal import Journal
 from .llm import DEFAULT_MODEL, OllamaClient
@@ -33,6 +43,15 @@ class ScanBody(BaseModel):
     only: list[str] | None = None
 
 
+class RunBody(BaseModel):
+    mode: Literal["normal", "attack", "secure"]
+
+
+class ProfileBody(BaseModel):
+    # A closed set: the browser can switch between named postures, never edit code.
+    profile: Literal["baseline", "broadened-incident-access"]
+
+
 def _journal_payload(journal: Journal) -> dict:
     unlocked, total = journal.progress()
     return {
@@ -41,9 +60,16 @@ def _journal_payload(journal: Journal) -> dict:
     }
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="AgentBreak — OWASP LLM Top 10 Lab", docs_url=None, redoc_url=None)
+def create_app(
+    *, evidence_dir: Path | None = None, cases_dir: Path | None = None
+) -> FastAPI:
+    """``evidence_dir`` / ``cases_dir`` default to ``artifacts/`` and
+    ``tests/security_cases/``, the same defaults the CLI uses."""
+
+    app = FastAPI(title="AgentBreak", docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=str(WEB_DIR), html=False), name="static")
+    # Workshop control profile, in memory only. Resets to baseline on restart.
+    app.state.control_profile = BASELINE
 
     @app.middleware("http")
     async def _no_cache(request, call_next):
@@ -55,6 +81,14 @@ def create_app() -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     async def index() -> FileResponse:
         return FileResponse(WEB_DIR / "index.html")
+
+    @app.get("/owasp", response_class=HTMLResponse)
+    async def owasp_lab() -> FileResponse:
+        return FileResponse(WEB_DIR / "owasp.html")
+
+    @app.get("/trust", response_class=HTMLResponse)
+    async def trust_lab() -> FileResponse:
+        return FileResponse(WEB_DIR / "trust.html")
 
     @app.get("/api/health")
     async def health(model: str = DEFAULT_MODEL) -> JSONResponse:
@@ -119,6 +153,44 @@ def create_app() -> FastAPI:
         results = Journal().to_probe_results()
         paths = save_report(results)
         return JSONResponse({"paths": paths, "markdown": render_markdown(results)})
+
+    # --- Agent Trust Lab ---------------------------------------------------
+    # Plain ``def`` handlers: the core is synchronous, so these run in the
+    # threadpool and the control-profile lock serializes them safely.
+
+    @app.get("/api/trust/state")
+    def trust_state() -> JSONResponse:
+        return JSONResponse(trustlab.lab_state(app.state.control_profile, cases_dir))
+
+    @app.post("/api/scenarios/{scenario}/run")
+    def run_scenario(scenario: str, body: RunBody) -> JSONResponse:
+        if scenario != SCENARIO_NAME:
+            raise HTTPException(status_code=404, detail=f"unknown scenario '{scenario}'")
+        return JSONResponse(
+            trustlab.run_scenario(body.mode, app.state.control_profile, evidence_dir)
+        )
+
+    @app.get("/api/evidence")
+    def evidence() -> JSONResponse:
+        return JSONResponse({"findings": trustlab.list_evidence(evidence_dir)})
+
+    @app.post("/api/runs/{run_id}/create-test")
+    def create_test(run_id: str) -> JSONResponse:
+        try:
+            return JSONResponse(trustlab.create_test(run_id, evidence_dir, cases_dir))
+        except RegressionCaseError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/regressions/verify")
+    def verify() -> JSONResponse:
+        return JSONResponse(
+            trustlab.verify(app.state.control_profile, cases_dir, evidence_dir)
+        )
+
+    @app.post("/api/workshop/profile")
+    def set_profile(body: ProfileBody) -> JSONResponse:
+        app.state.control_profile = body.profile
+        return JSONResponse(trustlab.lab_state(app.state.control_profile, cases_dir))
 
     return app
 

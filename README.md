@@ -423,6 +423,42 @@ python -m agentbreak.cli report                # scan and only write the report
 python -m agentbreak.cli serve --host 127.0.0.1 --port 8000   # web UI for this lab
 ```
 
+## Web labs
+
+`agentbreak serve` (default `http://127.0.0.1:8000`) starts one web shell with
+two separate labs:
+
+```
+AgentBreak Web
+├── OWASP Lab          /owasp
+│   └── breadth        10 categories, Vulnerability Diary, chat, hints, findings
+└── Agent Trust Lab    /trust
+    └── depth + regression
+                       normal → attack → evidence → create test → regression → fix → verify → CI gate
+```
+
+| Route    | What it is |
+|----------|------------|
+| `/`      | Landing page: choose a lab |
+| `/owasp` | OWASP LLM Top 10 Lab against the Contoso Support Assistant |
+| `/trust` | Agent Trust Lab for the flagship `indirect-injection` scenario |
+
+The Agent Trust Lab is a second renderer over the same core as the CLI: its
+API calls `run_indirect_injection`, `append_finding`, `create_case_from_run`
+and `run_suite` directly. Runs are recorded to `artifacts/attack_report.*`, and
+**Create regression test** writes `tests/security_cases/AB-REG-<n>.json`,
+exactly like `agentbreak create-test`. The workshop's "introduce a regression"
+step applies the same posture as
+`workshop/patches/broaden-incident-agent-access.patch`, but only in memory
+for the running server. No source file is modified, and restarting the
+server resets it to baseline.
+
+The Agent Trust Lab control profile is process-wide and intended for a single
+local workshop session. If multiple users share the same running server
+instance, they share the active workshop posture. **Reset walkthrough state**
+clears the page's walkthrough and restores the baseline posture; evidence and
+generated regression cases are preserved (see the workshop README for cleanup).
+
 See [`solution.md`](solution.md) for the full trigger-prompt reference for
 each of the ten categories.
 
@@ -433,7 +469,7 @@ docker compose up --build
 # open http://127.0.0.1:8000
 ```
 
-The web UI serves the OWASP-10 chatbot lab. To also start Ollama and pull a
+The web UI serves both labs (see [Web labs](#web-labs)). To also start Ollama and pull a
 model into a persistent volume:
 
 ```bash
@@ -458,7 +494,7 @@ Covers: the flagship scenario's policy controls
 (`tests/test_regression.py`), and the
 existing OWASP-10 lab (`tests/test_chatbot.py`, `tests/test_probes_scanner.py`,
 `tests/test_journal.py`, `tests/test_reporting.py`, `tests/test_cli.py`,
-`tests/test_web.py`).
+`tests/test_web.py`), and the two-lab web shell (`tests/test_web_labs.py`).
 
 ## Troubleshooting
 
