@@ -40,7 +40,12 @@ def build_finding(run: ScenarioRun) -> dict[str, Any]:
         {e.security_control for e in run.events if e.security_control}
     )
     policy_decisions = [
-        {"control": e.security_control, "decision": e.policy_decision, "reason": e.policy_reason}
+        {
+            "tool": e.requested_tool,
+            "control": e.security_control,
+            "decision": e.policy_decision,
+            "reason": e.policy_reason,
+        }
         for e in run.events
         if e.security_control
     ]

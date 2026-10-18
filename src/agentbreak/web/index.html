@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentBreak</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="landing">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="logo" aria-hidden="true">◆</span><strong>AgentBreak</strong></a>
+    <nav class="nav" aria-label="Main">
+      <a href="/" class="active" aria-current="page">Home</a>
+      <a href="/owasp">OWASP LLM Top 10</a>
+      <a href="/trust">Agent Trust</a>
+      <a href="/trust#evidence">Evidence</a>
+      <a href="/trust#regressions">Regression Tests</a>
+      <a href="#about">About</a>
+    </nav>
+  </header>
+
+  <main class="main">
+    <section class="hero">
+      <p class="eyebrow">Offensive &amp; Defensive AI Agent Security Lab</p>
+      <h1 class="hero-title">AGENTBREAK</h1>
+      <p class="hero-tag">
+        <span class="t-info">Break.</span>
+        <span class="t-warn">Observe.</span>
+        <span class="t-safe">Harden.</span>
+        <span class="t-danger">Test.</span>
+      </p>
+      <p class="muted hero-sub">Two local, deterministic labs. Pick the one that matches what you want to learn.</p>
+    </section>
+
+    <section class="lab-cards" aria-label="Labs">
+      <article class="lab-card lab-card-owasp">
+        <span class="eyebrow">Breadth</span>
+        <h2>OWASP LLM Top 10 Lab</h2>
+        <p>Learn the breadth of AI security risks against a simulated support chatbot.</p>
+        <p class="muted small">Target: Contoso Support Assistant</p>
+        <ul class="ticks">
+          <li>10 vulnerability families (LLM01–LLM10)</li>
+          <li>Gamified discovery with a Vulnerability Diary</li>
+          <li>Chat-based exploitation, probes and hints</li>
+          <li>Findings report with mitigations</li>
+        </ul>
+        <a class="cta cta-info" href="/owasp">Enter lab →</a>
+      </article>
+
+      <article class="lab-card lab-card-trust">
+        <span class="eyebrow">Depth</span>
+        <h2>Agent Trust Lab</h2>
+        <p>Follow one indirect prompt-injection attack chain in depth, from poisoned context to CI gate.</p>
+        <p class="muted small">Target: NorthGrid grid-incident agent</p>
+        <ol class="chain-mini" aria-label="Attack chain">
+          <li>Context</li><li>Agent</li><li>Tool</li><li>Policy</li>
+          <li>Evidence</li><li>Regression Test</li><li>CI Gate</li>
+        </ol>
+        <a class="cta cta-warn" href="/trust">Start scenario →</a>
+      </article>
+    </section>
+
+    <section class="path" aria-label="Learning path">
+      <div class="path-step"><strong>OWASP LLM Top 10 Lab</strong><span class="muted">learn breadth</span></div>
+      <span class="path-arrow" aria-hidden="true">→</span>
+      <div class="path-step"><strong>Agent Trust Lab</strong><span class="muted">understand attack chains</span></div>
+      <span class="path-arrow" aria-hidden="true">→</span>
+      <div class="path-step"><strong>Security Regression</strong><span class="muted">turn attacks into tests</span></div>
+    </section>
+
+    <section id="about" class="about panel">
+      <h2>About</h2>
+      <p>
+        AgentBreak is a local educational lab for breaking, observing, hardening,
+        replaying and regression-testing AI applications and tool-using agents.
+        Both labs are fully simulated: no LLM API, no network access, no real data.
+      </p>
+      <h3>Principles</h3>
+      <ul class="principles">
+        <li>Retrieved content is data, not authority.</li>
+        <li>Influence ≠ impact.</li>
+        <li>Security controls live outside the model.</li>
+        <li>Same attack, different posture.</li>
+        <li>Every successful AI attack should become a security test.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="ethics muted">
+      AgentBreak is intentionally vulnerable and was built for educational and
+      defensive security research. All data is fictional. No external calls.
+    </p>
+  </footer>
+</body>
+</html>

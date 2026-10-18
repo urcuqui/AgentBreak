@@ -3,25 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AgentBreak — OWASP Top 10 for LLM Practical</title>
+  <title>OWASP LLM Lab — AgentBreak</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
-<body>
+<body class="lab-owasp">
   <header class="topbar">
-    <div class="brand">
-      <span class="logo">🛡️</span>
-      <strong>AgentBreak</strong> OWASP LLM Pentesting Practical
+    <a class="brand" href="/"><span class="logo" aria-hidden="true">◆</span><strong>AgentBreak</strong></a>
+    <nav class="nav" aria-label="Main">
+      <a href="/">Home</a>
+      <a href="/owasp" class="active" aria-current="page">OWASP LLM Top 10</a>
+      <a href="/trust">Agent Trust</a>
+      <a href="/trust#evidence">Evidence</a>
+      <a href="/trust#regressions">Regression Tests</a>
+      <a href="/#about">About</a>
+    </nav>
+  </header>
+
+  <section class="labbar">
+    <div class="labbar-id">
+      <span class="eyebrow">Lab · Breadth</span>
+      <h1>OWASP LLM Top 10 Lab</h1>
+      <p class="muted">Target: <strong>Contoso Support Assistant</strong> · 10 vulnerability families · gamified discovery</p>
     </div>
-    <nav class="nav">
-      <a href="#" class="active">Chat</a>
-      <button id="open-report" class="link" type="button">Findings</button>
-      <button id="reset-journal" class="link danger" type="button">Reset lab</button>
+    <div class="labbar-actions">
       <span class="progress">
         <span id="progress-label">0 / 10 unlocked</span>
         <span class="bar"><span id="progress-fill" class="fill"></span></span>
       </span>
-    </nav>
-  </header>
+      <button id="open-report" class="primary" type="button">Findings</button>
+      <button id="reset-journal" class="danger" type="button">Reset lab</button>
+    </div>
+  </section>
 
   <main class="main">
     <section class="layout-2col">
