@@ -453,6 +453,12 @@ step applies the same posture as
 for the running server. No source file is modified, and restarting the
 server resets it to baseline.
 
+The Agent Trust Lab control profile is process-wide and intended for a single
+local workshop session. If multiple users share the same running server
+instance, they share the active workshop posture. **Reset walkthrough state**
+clears the page's walkthrough and restores the baseline posture; evidence and
+generated regression cases are preserved (see the workshop README for cleanup).
+
 See [`solution.md`](solution.md) for the full trigger-prompt reference for
 each of the ten categories.
 

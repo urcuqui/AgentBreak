@@ -190,6 +190,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .next-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.55rem; }
 .next-actions .cta { margin-top: 0; font-size: 0.95rem; padding: 0.7rem 1.4rem; }
 .mode-row { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.reset-note { margin: 0; text-align: right; }
 .chip-btn { background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.76rem; cursor: pointer; font-family: var(--mono); }
 .chip-btn:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
 
@@ -278,5 +279,6 @@ table.matrix { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
   .main { padding: 1rem; }
   .next-actions { align-items: stretch; width: 100%; }
   .mode-row { justify-content: flex-start; }
+  .reset-note { text-align: left; }
   .verdict-result { margin-left: 0; }
 }

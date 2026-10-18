@@ -14,34 +14,8 @@ from typing import Any
 from .agent import regression
 from .agent.evidence import append_finding, load_findings
 from .agent.scenario import QUESTION, SCENARIO_NAME, TASK, run_indirect_injection
+from .agent.security_mappings import related_mappings
 from .agent.workshop import BASELINE, PROFILES, control_profile
-from .owasp import get_category
-
-# The flagship scenario's supported mappings, as documented in
-# docs/security-mappings.md. Deliberately not all ten OWASP categories: the
-# broader OWASP lab is where LLM01-LLM10 are explored one by one.
-MAPPINGS_DOC = "docs/security-mappings.md"
-_OWASP_MAPPINGS: tuple[tuple[str, str], ...] = (
-    ("LLM01", "Injected instructions in a retrieved document steer the agent."),
-    ("LLM06", "The successful attack path retrieves and exfiltrates a credential."),
-    ("LLM07", "send_report executes against an untrusted destination when unchecked."),
-    ("LLM08", "The agent requests privileged tools the task never needed."),
-)
-_ATLAS_MAPPINGS: tuple[tuple[str, str], ...] = (
-    ("AML.T0051", "LLM Prompt Injection"),
-    ("AML.T0051.001", "LLM Prompt Injection: Indirect"),
-)
-
-
-def related_mappings() -> dict[str, Any]:
-    return {
-        "source": MAPPINGS_DOC,
-        "owasp_llm": [
-            {"code": code, "title": get_category(code).title, "why": why}
-            for code, why in _OWASP_MAPPINGS
-        ],
-        "mitre_atlas": [{"id": id_, "title": title} for id_, title in _ATLAS_MAPPINGS],
-    }
 
 
 def _without_payload(finding: dict[str, Any]) -> dict[str, Any]:

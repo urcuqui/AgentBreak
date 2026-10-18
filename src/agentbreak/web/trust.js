@@ -510,7 +510,7 @@ function nextAction() {
   };
   return {
     label: "Done", tone: "safe", title: "Walkthrough complete",
-    help: "Attack → Evidence → Regression test → CI gate. Use \"reset walkthrough\" to start again.",
+    help: "Attack → Evidence → Regression test → CI gate. Use \"reset walkthrough state\" to start again; evidence and generated regression cases are kept.",
     run: null,
   };
 }
@@ -591,6 +591,8 @@ async function retest(flag) {
   $("regressions").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// Resets this page's walkthrough and the control profile only. Evidence
+// (artifacts/attack_report.*) and generated AB-REG-* cases are kept on purpose.
 async function resetFlow() {
   state.flow = {}; state.runs = {}; state.created = null; state.suite = null;
   $("created-test").hidden = true;

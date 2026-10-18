@@ -16,8 +16,8 @@ from fastapi.testclient import TestClient
 from agentbreak import journal as journal_mod
 from agentbreak import reporting as reporting_mod
 from agentbreak.agent import policy, tools, workshop
+from agentbreak.agent.security_mappings import related_mappings
 from agentbreak.owasp import OWASP_CODES
-from agentbreak.trustlab import related_mappings
 from agentbreak.webapp import create_app
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -292,5 +292,45 @@ def test_related_mappings_are_limited_and_documented() -> None:
     assert len(codes) < len(OWASP_CODES)
     for code in codes:
         assert code in OWASP_CODES and code in doc
+    assert [a["id"] for a in m["mitre_atlas"]] == ["AML.T0051", "AML.T0051.001"]
     for atlas in m["mitre_atlas"]:
         assert atlas["id"] in doc
+
+
+def test_mappings_are_not_hard_coded_in_the_web_layer(client: TestClient) -> None:
+    source = (REPO_ROOT / "src/agentbreak/trustlab.py").read_text()
+    for literal in ("LLM01", "LLM06", "LLM07", "LLM08", "AML.T0051"):
+        assert literal not in source
+    assert client.get("/api/trust/state").json()["mappings"] == related_mappings()
+
+
+# ------------------------------------------------------- reset walkthrough
+
+
+def test_reset_walkthrough_state_keeps_evidence_and_cases(
+    client: TestClient, dirs: dict[str, Path]
+) -> None:
+    attack = _run(client, "attack")
+    created = client.post(f"/api/runs/{attack['run_id']}/create-test").json()
+    client.post("/api/workshop/profile", json={"profile": "broadened-incident-access"})
+
+    # "Reset walkthrough state" is client-side state plus this single call.
+    state = client.post("/api/workshop/profile", json={"profile": "baseline"}).json()
+
+    assert state["control_profile"] == "baseline"
+    assert (dirs["evidence"] / "attack_report.json").exists()
+    assert (dirs["evidence"] / "attack_report.md").exists()
+    assert [f["run_id"] for f in client.get("/api/evidence").json()["findings"]] == [attack["run_id"]]
+    assert (dirs["cases"] / created["file"]).exists()
+    assert created["case"]["id"] in [c["id"] for c in state["cases"]]
+    assert client.post("/api/regressions/verify").json()["status"] == "PASSED"
+
+
+def test_reset_walkthrough_wording_says_what_is_preserved(client: TestClient) -> None:
+    page = client.get("/trust").text
+    assert "reset walkthrough state" in page
+    assert "Evidence and generated regression cases are preserved." in page
+    script = client.get("/static/trust.js").text
+    # The reset never calls a destructive endpoint.
+    assert "DELETE" not in script
+    assert "/api/journal/reset" not in script

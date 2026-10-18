@@ -39,7 +39,7 @@
     <div id="regression-banner" class="banner b-danger" hidden>
       <strong>⚠ Workshop regression active.</strong>
       <span id="regression-banner-text"></span>
-      <span class="muted">In memory only. No source file was changed.</span>
+      <span class="muted">In memory only. No source file was changed. The posture is shared by everyone using this server.</span>
     </div>
 
     <!-- Workshop flow ------------------------------------------------------>
@@ -59,8 +59,10 @@
             <button class="chip-btn" data-mode="normal" type="button">normal</button>
             <button class="chip-btn" data-mode="attack" type="button">attack</button>
             <button class="chip-btn" data-mode="secure" type="button">secure</button>
-            <button id="reset-flow" class="chip-btn" type="button">reset walkthrough</button>
+            <button id="reset-flow" class="chip-btn" type="button"
+              title="Clears this page's walkthrough and restores the baseline posture.">reset walkthrough state</button>
           </div>
+          <p class="reset-note muted small">Reset returns to the baseline posture. Evidence and generated regression cases are preserved.</p>
         </div>
       </div>
     </section>
